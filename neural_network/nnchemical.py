@@ -33,8 +33,11 @@ def plot_flavor_pie(pred_dict):
         counterclock=False
     )
     ax.set_title("Predicted Flavor Distribution", fontsize=14, fontweight='bold')
-    plt.tight_layout()
-    plt.show()
+
+    return ax
+
+    #plt.tight_layout()
+    #plt.show()
 
 
 def tokenize_smiles(smiles, radius=2, n_bits=2048):
@@ -157,8 +160,8 @@ if __name__ == "__main__":
 
 
     
-    test_gen = CompoundFlavorGenerator('dataset/test.csv', 64)
-    model = tf.keras.models.load_model('flavor_prediction_model3.keras')
+    test_gen = CompoundFlavorGenerator('../dataset/test.csv', 64)
+    model = tf.keras.models.load_model('../flavor_prediction_model3.keras')
     
     # test_loss, test_accuracy = model.evaluate(test_gen, verbose=1)
     # print("Test data Loss: ", test_loss, "\n", "Test Accuracy: ", test_accuracy)

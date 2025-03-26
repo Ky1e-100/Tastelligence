@@ -1,74 +1,173 @@
 import sys
 import os
+import cv2
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+import deepseek as ds
+import nnchemical as nn
+
+class Graph:
+    def __init__(self, frame):
+        self.frame = frame
+
+        self.fig = Figure(figsize=(3, 3), dpi=80)
+        self.ax = self.fig.add_subplot(111)
+
+        self.ax.pie([], radius=1, autopct='%0.2f%%', shadow=True)
+
+        self.chart = FigureCanvasTkAgg(self.fig, self.frame)
+        self.chart.get_tk_widget().pack(side=tk.RIGHT)
+
+    def update(self, values, labels):
+        self.ax.clear()
+        self.ax.pie(values, radius=1, labels=labels, autopct='%0.2f%%', shadow=True)
+        self.chart.draw_idle()
+
+
 class tasteUI:
 
     def __init__(self, root):
+
         self.root = root
         self.root.title("Tastelligence")
-        self.root.geometry("800x300")
+        self.root.geometry("1600x600")
 
-        #Title Label
-        self.title_label = tk.Label(self.root, text="Tastelligence", font=("Ariel", 24))
-        self.title_label.pack()
+        # Title Frame ---------------------------------------------------------
+        self.title_frame = tk.Frame(self.root)
+        self.title_frame.pack(side=tk.TOP, padx=30, pady=30, anchor=tk.NW)
 
-        #Description Label
-        self.desc_label = tk.Label(self.root, text="Please input a chemical Smile, and press 'Upload Smile' to determine taste", font=("Ariel", 14))
-        self.desc_label.pack()
+        self.graph = Graph(self.title_frame)
 
-        #Frame for the button
-        #self.controls_frame = tk.Frame(self.root)
-        #self.controls_frame.pack(pady=10)
+        # Title Label
+        self.title_label = tk.Label(self.title_frame, text="Tastelligence", font=("Ariel", 24))
+        self.title_label.pack(padx=300, side=tk.TOP)
+
+        # Description Label
+        self.desc_label = tk.Label(self.title_frame, text="Please input a chemical Smile, and press 'Upload Smile' to determine taste", font=("Ariel", 14), wraplength=200)
+        self.desc_label.pack(padx=300, side=tk.TOP)
+
+        #Frame for the ingredient input ----------------------------------------------------
+        self.ingredient_frame = tk.Frame(self.root)
+        self.ingredient_frame.pack(side=tk.LEFT, padx=30, pady=30, anchor=tk.NW)
 
         #Submit button
         self.submit_button = tk.Button(
+            self.ingredient_frame,
+            text="Upload Ingredient",
+            command=self.submit_ingredient,
+            font=("Ariel", 14)
+        )
+        self.submit_button.pack(pady=50, side=tk.TOP)
+
+        # Ingredient Label
+        self.ingredient_label = tk.Label(
+            self.ingredient_frame,
+            text="Input Ingredient:",
+            font=("Arial", 14)
+        )
+        self.ingredient_label.pack(pady=5, side=tk.TOP)
+
+        # Ingredient Entry
+        self.ingredient_entry = tk.Entry(self.ingredient_frame, width=50)
+        self.ingredient_entry.pack(side=tk.TOP)
+
+        # Ingredient Output Frame
+        self.ingredient_output_frame = tk.Frame(self.root)
+        self.ingredient_output_frame.pack(side=tk.LEFT, padx=30, pady=30, anchor=tk.NW)
+
+        #Output label
+        self.output_label = tk.Label(self.ingredient_output_frame, text="Output", font=("Ariel", 14))
+        self.output_label.pack(pady=2, side=tk.TOP)
+
+        #Output field
+        self.output_field = tk.Text(
+            self.ingredient_output_frame,
+            height=10,
+            width=30,
+            wrap=tk.WORD,
+            font=("Arial", 12)
+        )
+        self.output_field.pack(side=tk.BOTTOM)
+
+
+        #Smile Frame ------------------------------------------------------
+        self.smile_frame = tk.Frame(self.root)
+        self.smile_frame.pack(side=tk.LEFT, padx=30, pady=30, anchor=tk.NW)
+
+        # Submit button
+        self.smile_button = tk.Button(
+            self.smile_frame,
             text="Upload Smile",
             command=self.submit_smile,
             font=("Ariel", 14)
         )
-        self.submit_button.pack(padx=10)
+        self.smile_button.pack(pady=50, side=tk.TOP)
 
-        #Frame for text
-        #self.display_frame = tk.Frame(self.root)
-        #self.display_frame.pack(padx=5, fill=tk.BOTH, expand=True)
-
-        #Text Field
-        #self.text_frame = tk.Frame(self.display_frame)
-        #self.text_frame.pack(side=tk.BOTTOM, padx=10, fill=tk.BOTH, expand=True)
-
+        # Label
         self.smile_label = tk.Label(
+            self.smile_frame,
             text="Input Smile:",
             font=("Arial", 14)
         )
-        self.smile_label.pack(padx=5, anchor=tk.NW)
+        self.smile_label.pack(side=tk.TOP)
 
-        self.smile_entry = tk.Entry(self.root, width=50)
-        self.smile_entry.pack(padx=5, pady=7, anchor=tk.NW)
+        # Text Entry
+        self.smile_entry = tk.Entry(self.smile_frame, width=50)
+        self.smile_entry.pack()
 
-        self.output_label = tk.Label(self.root, text="Output", font=("Ariel", 14))
-        self.output_label.pack(pady=2)
+        # Smile Output Frame
+        self.smile_output_frame = tk.Frame(self.root)
+        self.smile_output_frame.pack(side=tk.LEFT, padx=30, pady=30, anchor=tk.NW)
 
-        self.text_field = tk.Text(
-            height=7,
+        # Output label
+        self.smile_output_label = tk.Label(self.smile_output_frame, text="Output", font=("Ariel", 14))
+        self.smile_output_label.pack(pady=2)
+
+        # Output field
+        self.smile_output_field = tk.Text(
+            self.smile_output_frame,
+            height=10,
+            width=30,
             wrap=tk.WORD,
             font=("Arial", 12)
         )
-        self.text_field.pack()
+        self.smile_output_field.pack(side=tk.BOTTOM)
 
 
-    def submit_smile(self):
-        smile = self.smile_entry.get()
+    def plot(self):
+        ''' Plot a blank pie chart as a place holder '''
+
+    def submit_ingredient(self):
+        ingredient = self.ingredient_entry.get()
 
         # Probably add something here to translate the Smile into the ingredient,
         # then we can provide the taste
 
-        taste = "some taste function"
+        taste = ds.requestSMILES(ingredient)
 
-        if smile:
-            self.text_field.insert(tk.END, f"{smile} Tastes --> like {taste}\n")
+        # Clear the current text
+        self.output_field.delete("1.0", tk.END)
+
+        if taste:
+            self.output_field.insert(tk.END, f"{taste}\n")
+
+    def submit_smile(self):
+        smile = self.smile_entry.get()
+
+        smile_preds = nn.get_pred(smile)
+
+        self.smile_output_field.delete("1.0", tk.END)
+
+        if smile_preds:
+            self.smile_output_field.insert(tk.END, f"{smile_preds}")
+
+        # graph the pie chart
+        self.graph.update(smile_preds.values(), smile_preds.keys())
+
 
 def main():
     root = tk.Tk()
