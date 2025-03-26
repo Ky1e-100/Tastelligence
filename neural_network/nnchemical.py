@@ -109,6 +109,21 @@ class CompoundFlavorGenerator(tf.keras.utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indices)
             
+def get_pred(smiles):
+    """Takes in a smile and returns a dictionary containing flavour probabilities"""
+    test_gen = CompoundFlavorGenerator('dataset/test.csv', 64)
+    class_labels = test_gen.label_encoder.classes_
+
+    model = tf.keras.models.load_model('flavor_prediction_model3.keras')
+    
+    fingerprint = tokenize_smiles(smiles).reshape(1, -1)
+    prediction = model.predict(fingerprint)
+    pred_probs = prediction.flatten()
+
+    pred_dict = {flavor: float(prob) for flavor, prob in zip(class_labels, pred_probs)}
+    pred_dict["tasteless"] = pred_dict.pop("undefined")
+
+    return pred_dict
 
 # Test
 if __name__ == "__main__":
