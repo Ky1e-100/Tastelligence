@@ -28,5 +28,3 @@ def requestSMILES(ingredient):
         return content
     else:
         print("Failed to fetch data from API. Status Code:", response.status_code)
-        
-print(requestSMILES("soya sauce"))

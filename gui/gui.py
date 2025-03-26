@@ -1,14 +1,14 @@
 import sys
 import os
-import cv2
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-
-import deepseek as ds
+sys.path.append(os.path.join(os.path.dirname(__file__), '../neural_network'))
 import nnchemical as nn
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../deepseek'))
+import deepseek as ds
 
 class Graph:
     def __init__(self, frame):

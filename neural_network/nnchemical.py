@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 
 RDLogger.DisableLog('rdApp.*')
 
+model = tf.keras.models.load_model('flavor_prediction_model3.keras')
+
 def plot_flavor_pie(pred_dict):
     labels = list(pred_dict.keys())
     values = list(pred_dict.values())
@@ -114,10 +116,7 @@ class CompoundFlavorGenerator(tf.keras.utils.Sequence):
             
 def get_pred(smiles):
     """Takes in a smile and returns a dictionary containing flavour probabilities"""
-    test_gen = CompoundFlavorGenerator('dataset/test.csv', 64)
-    class_labels = test_gen.label_encoder.classes_
-
-    model = tf.keras.models.load_model('flavor_prediction_model3.keras')
+    class_labels = ['bitter', 'sour', 'sweet', 'umami', 'undefined']
     
     fingerprint = tokenize_smiles(smiles).reshape(1, -1)
     prediction = model.predict(fingerprint)
@@ -128,59 +127,48 @@ def get_pred(smiles):
 
     return pred_dict
 
+def train_model():
+    train_gen = CompoundFlavorGenerator('dataset/train.csv', 64)
+    val_gen = CompoundFlavorGenerator('dataset/val.csv', 64)
+    
+    model = tf.keras.Sequential([
+        tf.keras.layers.InputLayer(input_shape=(2048,)),
+        tf.keras.layers.Dense(1024, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+        tf.keras.layers.Dense(5, activation='softmax'),
+    ])
+
+    # Compile Model
+    optimizer = tf.keras.optimizers.SGD()
+    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
+
+    # Model Summary
+    model.summary()
+    
+    model.fit(x=train_gen, validation_data=val_gen, epochs=20, verbose=1)
+    model.save("flavor_prediction_model3.keras")
+    
+    return
+
 # Test
 if __name__ == "__main__":
-    # train_gen = CompoundFlavorGenerator('dataset/train.csv', 64)
-    # val_gen = CompoundFlavorGenerator('dataset/val.csv', 64)
-    
-    # model = tf.keras.Sequential([
-    #     tf.keras.layers.InputLayer(input_shape=(2048,)),
-    #     tf.keras.layers.Dense(1024, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    #     tf.keras.layers.Dropout(0.3),
-    #     tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    #     tf.keras.layers.BatchNormalization(),
-    #     tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    #     tf.keras.layers.Dropout(0.3),
-    #     tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    #     tf.keras.layers.BatchNormalization(),
-    #     tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    #     tf.keras.layers.Dense(5, activation='softmax'),
-    # ])
-
-    # # Compile Model
-    # optimizer = tf.keras.optimizers.SGD()
-    # model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
-
-    # # Model Summary
-    # model.summary()
-    
-    # model.fit(x=train_gen, validation_data=val_gen, epochs=20, verbose=1)
-    # model.save("flavor_prediction_model3.keras")
-    
-
 
     
-    test_gen = CompoundFlavorGenerator('../dataset/test.csv', 64)
-    model = tf.keras.models.load_model('../flavor_prediction_model3.keras')
+    # test_gen = CompoundFlavorGenerator('dataset/val.csv', 64)
+    model = tf.keras.models.load_model('flavor_prediction_model3.keras')
     
     # test_loss, test_accuracy = model.evaluate(test_gen, verbose=1)
     # print("Test data Loss: ", test_loss, "\n", "Test Accuracy: ", test_accuracy)
 
     sample_smiles = "C(C1C(C(C(C(O1)OC2(C(C(C(O2)CO)O)O)CO)O)O)O)O"
-    sample_fingerprint = tokenize_smiles(sample_smiles).reshape(1, -1)
-
-    prediction = model.predict(sample_fingerprint)
-    print(prediction)
-
-    
-    # Get class labels from the generator
-    class_labels = test_gen.label_encoder.classes_
-
-    # Flatten prediction array
-    pred_probs = prediction.flatten()
-
-    pred_dict = {flavor: float(prob) for flavor, prob in zip(class_labels, pred_probs)}
-    pred_dict["tasteless"] = pred_dict.pop("undefined")
+    pred_dict = get_pred(sample_smiles)
 
     print("Predicted flavor probabilities:")
     for flavor, prob in pred_dict.items():
