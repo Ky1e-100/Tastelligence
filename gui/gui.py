@@ -1,5 +1,8 @@
 import sys
 import os
+from collections import Counter
+
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
@@ -20,11 +23,16 @@ class Graph:
         self.ax.pie([], radius=1, autopct='%0.2f%%', shadow=True)
 
         self.chart = FigureCanvasTkAgg(self.fig, self.frame)
-        self.chart.get_tk_widget().pack(side=tk.RIGHT)
+        self.chart.get_tk_widget().pack(side=tk.RIGHT, anchor=tk.E)
 
     def update(self, values, labels):
         self.ax.clear()
-        self.ax.pie(values, radius=1, labels=labels, autopct='%0.2f%%', shadow=True)
+        print(labels)
+
+        autopct = lambda pct: '{:1.1f}%'.format(pct) if pct > 5 else ''
+
+        self.ax.pie(values, radius=1, labels=labels, autopct=autopct, shadow=True)
+
         self.chart.draw_idle()
 
 
@@ -44,10 +52,10 @@ class tasteUI:
 
         # Title Label
         self.title_label = tk.Label(self.title_frame, text="Tastelligence", font=("Ariel", 24))
-        self.title_label.pack(padx=300, side=tk.TOP)
+        self.title_label.pack(padx=440, side=tk.TOP)
 
         # Description Label
-        self.desc_label = tk.Label(self.title_frame, text="Please input a chemical Smile, and press 'Upload Smile' to determine taste", font=("Ariel", 14), wraplength=200)
+        self.desc_label = tk.Label(self.title_frame, text="Please input a chemical Smile, and press 'Upload Smile' to determine taste", font=("Ariel", 14), wraplength=300)
         self.desc_label.pack(padx=300, side=tk.TOP)
 
         #Frame for the ingredient input ----------------------------------------------------
@@ -162,8 +170,10 @@ class tasteUI:
 
         self.smile_output_field.delete("1.0", tk.END)
 
+        val = max(smile_preds, key=smile_preds.get)
+
         if smile_preds:
-            self.smile_output_field.insert(tk.END, f"{smile_preds}")
+            self.smile_output_field.insert(tk.END, f"The most prominent taste is: {val}")
 
         # graph the pie chart
         self.graph.update(smile_preds.values(), smile_preds.keys())

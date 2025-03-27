@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 RDLogger.DisableLog('rdApp.*')
 
-model = tf.keras.models.load_model('flavor_prediction_model3.keras')
+model = tf.keras.models.load_model('../flavor_prediction_model3.keras')
 
 def plot_flavor_pie(pred_dict):
     labels = list(pred_dict.keys())
