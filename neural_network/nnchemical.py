@@ -2,7 +2,7 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
 from rdkit import Chem
 from rdkit.Chem import rdFingerprintGenerator
 from rdkit import RDLogger
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 RDLogger.DisableLog('rdApp.*')
 
-model = tf.keras.models.load_model('../flavor_prediction_model3.keras')
+model = tf.keras.models.load_model('flavor_prediction_model3.keras')
 
 def plot_flavor_pie(pred_dict):
     labels = list(pred_dict.keys())
@@ -153,28 +153,49 @@ def train_model():
     model.summary()
     
     model.fit(x=train_gen, validation_data=val_gen, epochs=20, verbose=1)
-    model.save("flavor_prediction_model3.keras")
+    model.save("flavor_prediction_modelTest.keras")
+    train_loss, training_performance = model.evaluate(train_gen)
+    val_loss, validation_performance = model.evaluate(val_gen)
+        
+        
+    return training_performance, validation_performance
     
-    return
 
 # Test
 if __name__ == "__main__":
 
+    # train_perf, val_perf = train_model()
+    # print(train_perf, val_perf)
+    test_gen = CompoundFlavorGenerator('dataset/test.csv', 64)
+    model = tf.keras.models.load_model('flavor_prediction_modelTest.keras')
     
-    # test_gen = CompoundFlavorGenerator('dataset/val.csv', 64)
-    model = tf.keras.models.load_model('flavor_prediction_model3.keras')
+    test_loss, test_accuracy = model.evaluate(test_gen, verbose=1)
+    print("Test data Loss: ", test_loss, "\n", "Test Accuracy: ", test_accuracy)
     
-    # test_loss, test_accuracy = model.evaluate(test_gen, verbose=1)
-    # print("Test data Loss: ", test_loss, "\n", "Test Accuracy: ", test_accuracy)
+    y_true = []
+    y_pred = []
 
-    sample_smiles = "C(C1C(C(C(C(O1)OC2(C(C(C(O2)CO)O)O)CO)O)O)O)O"
-    pred_dict = get_pred(sample_smiles)
-
-    print("Predicted flavor probabilities:")
-    for flavor, prob in pred_dict.items():
-        print(f"{flavor}: {prob:.3f}")
+    for batch_x, batch_y in test_gen:
+        preds = model.predict(batch_x)
         
-    plot_flavor_pie(pred_dict)
+        # If it's multi-class classification
+        y_true.extend(np.argmax(batch_y, axis=1))
+        y_pred.extend(np.argmax(preds, axis=1))
+        
+        # Optional: break if the generator is finite and you've covered all data
+        if len(y_true) >= len(test_gen) * test_gen.batch_size:
+            break
+    f1 = f1_score(y_true, y_pred, average='weighted')  # or 'macro', 'micro' depending on your case
+    print("F1 Score:", f1)
+
+    # sample_smiles = "C(C1C(C(C(C(O1)OC2(C(C(C(O2)CO)O)O)CO)O)O)O)O"
+    # pred_dict = get_pred(sample_smiles)
+
+    # print("Predicted flavor probabilities:")
+    # for flavor, prob in pred_dict.items():
+    #     print(f"{flavor}: {prob:.3f}")
+        
+    # plot_flavor_pie(pred_dict)
     
 
     

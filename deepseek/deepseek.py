@@ -17,7 +17,7 @@ def requestSMILES(ingredient):
 
     data = {
         "model": "deepseek/deepseek-chat:free",
-        "messages": [{"role": "user", "content": f"What is the 3 most common molecular SMILE contained in {ingredient}? Give it to me in a list with only name of compound and chemical SMILE, no extra words"}]
+        "messages": [{"role": "user", "content": f"What are the 5 most common molecules in a {ingredient}? Focus mainly on molecules that give the {ingredient} it's most prevalent taste. Give it to me in a list with only name of compound and chemical SMILES, no extra words."}]
     }
 
     response = requests.post(API_URL, json=data, headers=headers)
